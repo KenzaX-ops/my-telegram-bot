@@ -12,7 +12,7 @@ STORAGE_CHANNEL_ID = -1003905586421
 AUTO_DELETE_AUDIO_SECONDS = 600  # ၁၀ မိနစ် (၆၀၀ စက္ကန့်)
 
 # ဘရိုပေးထားတဲ့ Welcome Photo Link
-WELCOME_PHOTO_URL = "https://i.imgur.com/ON9kAFy.jpeg"
+WELCOME_PHOTO_URL = "https://i.postimg.cc/mD82JkgR/photo.jpg"
 
 # သတိပေးစာတန်း
 WARNING_TEXT = "🔔 ဤသီချင်းဖိုင်သည် ၁၀ မိနစ်အတွင်း အလိုအလျောက် ပျက်သွားပါမည်။ အချိန်မီ နားထောင်/ဒေါင်းလုပ် ဆွဲထားပေးပါခင်ဗျာ။"
