@@ -6,17 +6,18 @@ from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
 from telegram.constants import ChatAction
 from telegram.ext import Application, CommandHandler, ContextTypes, InlineQueryHandler
 
-# ==============================================================================
-# CONFIGURATION
-# ==============================================================================
+# ==================== CONFIGURATION ====================
 TOKEN = "8809216809:AAFOcO0RmmEQbeQ2NuYtfYfXZv2DSL7LToE"
 STORAGE_CHANNEL_ID = -1003905586421
 AUTO_DELETE_AUDIO_SECONDS = 600  # ၁၀ မိနစ် (၆၀၀ စက္ကန့်)
-WARNING_TEXT = "🔔 ဤသီချင်းဖိုင်သည် ၁၀ မိနစ်အတွင်း အလိုအလျောက် ပျက်သွားပါမည်။ အချိန်မီ နားထောင်/ဒေါင်းလုပ် ဆွဲထားပေးပါ။"
 
-# ==============================================================================
-# DATABASE & LANGUAGE SETTINGS
-# ==============================================================================
+# ဘရိုပေးထားတဲ့ Welcome Photo Link
+WELCOME_PHOTO_URL = "https://i.imgur.com/ON9kAFy.jpeg"
+
+# သတိပေးစာတန်း
+WARNING_TEXT = "🔔 ဤသီချင်းဖိုင်သည် ၁၀ မိနစ်အတွင်း အလိုအလျောက် ပျက်သွားပါမည်။ အချိန်မီ နားထောင်/ဒေါင်းလုပ် ဆွဲထားပေးပါခင်ဗျာ။"
+
+# ==================== DATABASE & LANG ====================
 user_stats = {}
 current_lang = 'my'
 
@@ -33,15 +34,12 @@ LANGS = {
     }
 }
 
-# Inline Search အတွက် Database (ဒီနေရာမှာ သီချင်းအသစ်တွေ ထပ်ဖြည့်နိုင်ပါတယ်)
 SONG_DATABASE = [
     {"id": "1", "title": "သီချင်း ၁"},
     {"id": "2", "title": "သီချင်း ၂"},
 ]
 
-# ==============================================================================
-# FLASK WEB SERVER (To keep Bot alive on Render)
-# ==============================================================================
+# ==================== FLASK SERVER ====================
 app = Flask(__name__)
 
 @app.route('/')
@@ -52,12 +50,8 @@ def run_flask():
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
 
-# ==============================================================================
-# BOT FUNCTIONS
-# ==============================================================================
-
+# ==================== BOT FUNCTIONS ====================
 async def delete_message_after_delay(context, chat_id, message_id, delay):
-    """သီချင်းကို သတ်မှတ်ချိန်ပြည့်ရင် အလိုလိုဖျက်ခြင်း"""
     await asyncio.sleep(delay)
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -66,7 +60,6 @@ async def delete_message_after_delay(context, chat_id, message_id, delay):
         print(f"Failed to delete message: {e}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Start command: သီချင်းပို့ခြင်းနှင့် Auto-delete လုပ်ခြင်း"""
     user_id = update.effective_user.id
     args = context.args 
     chat_id = update.effective_chat.id
@@ -80,36 +73,40 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.UPLOAD_VOICE)
             await asyncio.sleep(3)
             
-            # သီချင်းကို Channel ထဲကနေ Copy ကူးပြီး ပို့ပေးခြင်း
+            # သီချင်းပို့ခြင်း
             audio_msg = await context.bot.copy_message(chat_id=chat_id, from_chat_id=STORAGE_CHANNEL_ID, message_id=msg_id)
             
-            # Caption ကို Warning text နဲ့ အစားထိုးခြင်း
+            # Warning စာတန်းထည့်ခြင်း
             await context.bot.edit_message_caption(chat_id=chat_id, message_id=audio_msg.message_id, caption=WARNING_TEXT)
             
             try: await temp_msg.delete()
             except: pass
             
-            # ၁၀ မိနစ်နေရင် ဖျက်ဖို့ Task စတင်ခြင်း
+            # ၁၀ မိနစ်နေရင် ဖျက်ရန်
             asyncio.create_task(delete_message_after_delay(context, chat_id, audio_msg.message_id, AUTO_DELETE_AUDIO_SECONDS))
             return
         except Exception as e:
             await update.message.reply_text("⚠️ ရှာမတွေ့ပါ သို့မဟုတ် Storage Channel ထဲတွင် Bot ကို Admin ထည့်မထားပါ။")
     else:
-        await update.message.reply_text(LANGS[current_lang]['welcome'])
+        # ပုံနဲ့တကွ Welcome စာ ပို့ပေးခြင်း
+        try:
+            await update.message.reply_photo(
+                photo=WELCOME_PHOTO_URL,
+                caption=LANGS[current_lang]['welcome']
+            )
+        except Exception as e:
+            await update.message.reply_text(LANGS[current_lang]['welcome'])
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """အသုံးပြုသူရဲ့ Stats ကို ပြခြင်း"""
     count = user_stats.get(update.effective_user.id, 0)
     await update.message.reply_text(LANGS[current_lang]['stats'].format(count=count))
 
 async def toggle_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """ဘာသာစကားပြောင်းခြင်း"""
     global current_lang
     current_lang = 'en' if current_lang == 'my' else 'my'
     await update.message.reply_text(LANGS[current_lang]['lang_changed'])
 
 async def inline_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Inline Search လုပ်ခြင်း"""
     query = update.inline_query.query
     if not query: return
     results = [
@@ -120,17 +117,12 @@ async def inline_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     await update.inline_query.answer(results)
 
-# ==============================================================================
-# MAIN PROGRAM
-# ==============================================================================
+# ==================== MAIN ====================
 def main():
-    # Flask Server ကို Background thread မှာ Run
     threading.Thread(target=run_flask, daemon=True).start()
     
-    # Telegram Bot ကို Setup လုပ်ခြင်း
     application = Application.builder().token(TOKEN).build()
     
-    # Handlers များထည့်ခြင်း
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("lang", toggle_lang))
